@@ -1,0 +1,220 @@
+#! /bin/bash
+declare -r appArr=( [1]="chromium-browser" 
+	[2]="wine" 
+	[3]="winetricks" 
+	[4]="remmina" 
+	[5]="digikam" 
+	[6]="cheese" 
+	[7]="gimp" 
+	[8]="meld" 
+	[9]="gparted" 
+	[10]="git" 
+	[11]="gcp" 
+	[12]="gnome-schedule" 
+	[13]="grsync" 
+	[14]="nautilus-dropbox" 
+	[15]="clamtk" 
+	[16]="Evernote" 
+	[17]="google-musicmanager-beta" 
+	[18]="skype" 
+	[19]="smartgit" 
+	[20]="boot-repair"
+	[21]="archey"
+)
+
+declare -r BLACK=$(tput setaf 0)	# black
+declare -r RED=$(tput setaf 1)		# red
+declare -r GREEN=$(tput setaf 2)	# green
+declare -r YELLOW=$(tput setaf 3) 	# yellow
+declare -r BLUE=$(tput setaf 4) 	# blue
+declare -r MAGENTA=$(tput setaf 5)	# MAGENTA
+declare -r CYAN=$(tput setaf 6) 	# CYAN
+declare -r WHITE=$(tput setaf 7) 	# WHITE
+declare -r RS=$(tput setaf 9)		# reset
+
+
+bootrepair(){
+	sudo add-apt-repository ppa:yannubuntu/boot-repair
+	sudo sed 's/trusty/saucy/g' -i /etc/apt/sources.list.d/yannubuntu-boot-repair-trusty.list
+	sudo apt-get update
+}
+
+evernote(){
+	url="http://evernote.com/download/get.php?file=Win"
+	wget -O "Evernote.exe" $url
+	wine "Evernote.exe"
+	read -p "Press [Enter] to continue."
+	rm "Evernote.exe"
+	clear
+	echo -e $GREEN"Successfully installed Evernote"$RS
+}
+
+gmusic(){
+	sudo sh -c 'echo "deb http://dl.google.com/linux/musicmanager/deb/ stable main" >> /etc/apt/sources.list.d/google-musicmanager.list'
+	wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+	sudo apt-get update
+	clear
+}
+
+skype(){
+	sudo dpkg --add-architecture i386
+	sudo add-apt-repository "deb http://archive.canonical.com/ $(lsb_release -sc) partner"
+	sudo apt-get update
+	clear
+}
+
+smartgit(){
+
+	if dpkg --get-selections | grep -q "^openjdk-7-jre[[:space:]]*install$" >/dev/null; then
+		echo -e $BLUE"openjdk-7-jre is already installed"$RS
+	else
+		sudo apt-get install openjdk-7-jre
+	fi
+	#sudo add-apt-repository ppa:eugenesan/ppa
+	#sudo apt-get update
+	clear
+}
+
+archey(){
+	sudo apt-get install lsb-release scrot
+	wget http://github.com/downloads/djmelik/archey/archey-0.2.8.deb
+	sudo dpkg -i archey-0.2.8.deb 
+	rm archey-0.2.8.deb
+	clear
+	echo -e $GREEN"Successfully installed Archey"$RS
+}
+
+apps() {
+	clear
+	selection=$@
+	if [ $selection = "all" ]; then
+		toInstall=${appArr[@]}
+	elif [ $selection -eq $selection 2> /dev/null ]; then
+		toInstall=${appArr[$selection]}
+	else
+		toInstall=$selection
+	fi
+
+	for pkg in $toInstall ; do
+
+		if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
+			echo -e $BLUE"$pkg is already installed"$RS
+		elif [ $pkg = "archey" ]; then
+			archey
+		elif [ $pkg = "Evernote" ]; then
+			if [[ -d "/home/rob/.wine/drive_c/Program Files (x86)/Evernote" ]]; then
+				clear
+				echo -e $BLUE"$pkg is already installed"$RS
+			else
+				evernote
+			fi
+		elif [ $pkg = "google-musicmanager-beta" ]; then
+			gmusic
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		elif [ $pkg = "skype" ]; then
+			skype
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		elif [ $pkg = "smartgit" ]; then
+			smartgit
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		elif [ $pkg = "boot-repair" ]; then
+			bootrepair
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		else
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		fi
+	done
+
+}
+
+menu(){
+	clear
+	echo ""
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+while :
+do
+
+
+
+	printf "$border" "#========================+++++${GREEN} Apps ${RS}+++++========================#"
+	printf "$format" "#" "" "" "#"
+
+	for i in "${!appArr[@]}"; do
+		pkg=${appArr[$i]}
+		if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
+			if [ $((i%2)) -eq 0 ]; then
+				printf "$format2"  "${GREEN} $i) $pkg${RS}" \#
+			else
+				printf "$format1"  \# "${GREEN} $i) $pkg${RS}"
+			fi
+		elif [ $pkg = "Evernote" ] && [[ -d "/home/rob/.wine/drive_c/Program Files (x86)/Evernote" ]]; then
+			if [ $((i%2)) -eq 0 ]; then
+				printf "$format2"  "${GREEN} $i) $pkg${RS}" \#
+			else
+				printf "$format1"  \# "${GREEN} $i) $pkg${RS}"
+			fi
+		else
+			if [ $((i%2)) -eq 0 ]; then
+				printf "$format2"  "${RED} $i) $pkg${RS}" \#
+			else
+				printf "$format1"  \# "${RED} $i) $pkg${RS}"
+			fi
+		fi
+	done
+
+	i=${#appArr[@]}
+	if [ ! $((i%2)) -eq 0 ]; then
+		printf "%-30s %2s\n" "" \#
+	fi
+
+	printf "$format" \# "" "" \#
+	printf "$format" \# " a) all apps" "r) return" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option or enter a package name: "
+
+	read app
+	    case $app in
+		[1-21]) apps $app; continue;;
+		a) apps "all"; continue;;
+		r) clear; echo ""; exit 1;;
+	        *) apps $app; continue;;
+	    esac
+
+done
+}
+
+menu

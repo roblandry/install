@@ -1,0 +1,75 @@
+#! /bin/bash
+FRED="\033[31m" # foreground red
+RS="\033[0m"    # reset
+
+echo -e $FRED"Installing: LAMP"$RS
+
+#check if root user
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+#check if password entered
+if [[ ! $1 ]]; then
+	echo -e "Please enter a password [enter]"
+	read pswd
+else
+	pswd=$1
+fi
+
+echo -e $pswd
+
+#install debconf-utils for noninteractive
+pkg="debconf-utils"
+if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
+	echo -e "$pkg is already installed"
+else
+	if apt-get -qq install $pkg; then
+	    echo -e "Successfully installed $pkg"
+	else
+	    echo -e "Error installing $pkg"
+	fi
+fi
+
+
+#install Apache2
+echo -e "Installing Apache2"
+apt-get -q -y install apache2
+echo "ServerName localhost" >> /etc/apache2/apache2.conf
+#if grep ^sshd: /proc/$PPID/cmdline &> /dev/null; then
+#	echo ""
+#else
+	xdg-open "http://localhost"
+#fi
+
+
+#install MySQL
+echo -e "Installing MySQL"
+echo "mysql-server-5.5 mysql-server/root_password_again password $pswd" | debconf-set-selections
+echo "mysql-server-5.5 mysql-server/root_password password $pswd" | debconf-set-selections
+apt-get -q -y install mysql-server mysql-client
+service mysql status
+
+#install PHP
+echo -e "Installing PHP"
+apt-get install php5 php5-mysql libapache2-mod-php5
+service apache2 restart
+echo "<?php phpinfo(); ?>" > /var/www/testphp.php
+#if grep ^sshd: /proc/$PPID/cmdline &> /dev/null; then
+#        echo ""
+#else
+        xdg-open "http://localhost/testphp.php"
+#fi
+
+
+#install PHPmyadmin
+echo -e "Installing phpmyadmin"
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/app-password-confirm password $pswd" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/admin-pass password $pswd" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/app-pass password $pswd" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+apt-get -q -y install phpmyadmin
+
+echo -e "Congradulations LAMP installed!"

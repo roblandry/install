@@ -1,0 +1,111 @@
+#!/bin/bash -   
+#title          :menu.sh
+#description    :Menu
+#author         :Rob Landry
+#date           :20140614
+#version        :0.1    
+#usage          :./menu.sh
+#notes          :       
+#bash_version   :4.3.11(1)-release
+#============================================================================
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+#rm -r $SCRIPTPATH/*~
+#rm -r $SCRIPTPATH/install/*~
+declare -r thisDay="20140614"
+declare -r BLACK=$(tput setaf 0)	# black
+declare -r RED=$(tput setaf 1)		# red
+declare -r GREEN=$(tput setaf 2)	# green
+declare -r YELLOW=$(tput setaf 3) 	# yellow
+declare -r BLUE=$(tput setaf 4) 	# blue
+declare -r MAGENTA=$(tput setaf 5)	# MAGENTA
+declare -r CYAN=$(tput setaf 6) 	# CYAN
+declare -r WHITE=$(tput setaf 7) 	# WHITE
+declare -r RS=$(tput setaf 9)		# reset
+IFS=!
+declare -r filelist=(`find $SCRIPTPATH/install/* -printf %f!`)
+
+firstRun() {
+	clear
+	echo ""
+	border=" %-65s\n"
+	format=" %-23s %-20s %21s\n"
+	printf "$border" "#========================++++${GREEN} Welcome ${RS}+++========================#"
+	sleep .5
+	printf "$format" "#" "" "#"
+	sleep .5
+	printf "$format" "#" "Installation Script" "#"
+	sleep .5
+	printf "$format" "#" "" "#"
+	sleep .5
+	printf "$format" "#" "written by" "#"
+	sleep .5
+	printf "$format" "#" "Rob Landry" "#"
+	sleep .5
+	printf "$format" "#" "" "#"
+	sleep .5
+	printf "$format" "#" "$thisDay" "#"
+	sleep .5
+	printf "$format" "#" "" "#"
+	sleep .5
+	printf "$border" "#================================================================#"
+	sleep 3
+	clear
+}
+
+menu() {
+	clear
+	echo ""
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+while :
+do
+	printf "$border" "#========================++${GREEN} Main Menu ${RS}+++========================#"
+	printf "$format" "#" "" "" "#"
+
+	for i in ${!filelist[@]}; do
+		script=${filelist[$i]}
+		if [ ! $((i%2)) -eq 0 ]; then
+
+			if [[ -x $SCRIPTPATH/install/$script ]]; then
+				printf "$format2"  "${GREEN} $i) $script${RS}" \#
+			else
+				printf "$format2"  "${RED} $i) $script${RS}" \#
+			fi
+		else
+			if [[ -x $SCRIPTPATH/install/$script ]]; then
+				printf "$format1"  \# "${GREEN} $i) $script${RS}"
+			else
+				printf "$format1"  \# "${RED} $i) $script${RS}"
+			fi
+		fi
+	done
+
+	i=${#filelist[@]}
+	if [ ! $((i%2)) -eq 0 ]; then
+		printf "%-30s %2s\n" "" \#
+	fi
+
+	printf "$format" "#" "" "" "#"
+	printf "$format" \# " q) quit" "" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option: "
+
+	read go
+	    case $go in
+		[0-4]) $SCRIPTPATH/install/${filelist[$go]}; continue;;
+		f) clear; firstRun; continue;;
+		q) clear; exit 0;;
+	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
+	    esac
+
+done
+
+}
+
+if [[ ! $1 -eq 1 ]]; then
+	firstRun
+fi
+menu

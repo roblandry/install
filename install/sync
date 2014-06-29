@@ -1,0 +1,70 @@
+#!/bin/bash -   
+#title          :menu.sh
+#description    :Menu
+#author         :Rob Landry
+#date           :20140629
+#version        :0.1    
+#usage          :./menu.shsync
+#notes          :       
+#bash_version   :4.3.11(1)-release
+#============================================================================
+declare -r BLACK=$(tput setaf 0)	# black
+declare -r RED=$(tput setaf 1)		# red
+declare -r GREEN=$(tput setaf 2)	# green
+declare -r YELLOW=$(tput setaf 3) 	# yellow
+declare -r BLUE=$(tput setaf 4) 	# blue
+declare -r MAGENTA=$(tput setaf 5)	# MAGENTA
+declare -r CYAN=$(tput setaf 6) 	# CYAN
+declare -r WHITE=$(tput setaf 7) 	# WHITE
+declare -r RS=$(tput setaf 9)		# reset
+
+doit(){
+test=$1
+from=$2
+itto=$3
+
+x="-n"
+if [ $test -eq 1 ]; then
+	x=
+fi
+clear
+rsync -r $x -t -p -o -g -v \
+--progress -l -s --exclude-from /home/rob/rsync-exclude.txt \
+"$from" "$itto"
+clear
+}
+
+menu() {
+	clear
+	echo ""
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+while :
+do
+	printf "$border" "#========================+++++${GREEN} Sync ${RS}+++++========================#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" "#" " 1) Sync to External" " 2) Test Sync to External" "#"
+	printf "$format" "#" " 3) Sync from External" " 4) Test Sync from External" "#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" \# " r) return" "" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option: "
+
+	read go
+	    case $go in
+		1) doit 1 "/home/rob/" "/media/rob/My\ Passport/"; continue;;
+		2) doit 0 "/home/rob/" "/media/rob/My\ Passport/"; continue;;
+		3) doit 1 "/media/rob/My\ Passport/" "/home/rob/"; continue;;
+		4) doit 0 "/media/rob/My\ Passport/" "/home/rob/"; continue;;
+		r) clear; echo ""; exit 1;;
+	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
+	    esac
+
+done
+
+}
+
+menu
