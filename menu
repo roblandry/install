@@ -52,6 +52,18 @@ firstRun() {
 	clear
 }
 
+update(){
+	wget -q https://raw.githubusercontent.com/roblandry/install/master/menu -O $SCRIPTPATH/temp
+	oldDate=`sed '5q;d' $SCRIPTPATH/menu`
+	newDate=`sed '5q;d' $SCRIPTPATH/temp`
+	oldDate=${oldDate:17:8}
+	newDate=${newDate:17:8}
+	if [ $newDate > $oldDate ]; then
+		git pull origin
+		echo -e $GREEN"Update Complete!"$RS
+	fi
+}
+
 menu() {
 	clear
 	echo ""
@@ -88,7 +100,7 @@ do
 	fi
 
 	printf "$format" "#" "" "" "#"
-	printf "$format" \# " q) quit" "" \#
+	printf "$format" \# " q) quit" "u) update" \#
 	printf "$border" "#================================================================#"
 	echo ""
 	echo "Chose your option: "
@@ -98,6 +110,7 @@ do
 		[0-4]) $SCRIPTPATH/install/${filelist[$go]}; continue;;
 		f) clear; firstRun; continue;;
 		q) clear; exit 0;;
+		u) clear; update; continue;;
 	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
 	    esac
 
@@ -108,4 +121,5 @@ done
 if [[ ! $1 -eq 1 ]]; then
 	firstRun
 fi
+
 menu
