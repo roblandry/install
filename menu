@@ -2,7 +2,7 @@
 #title          :menu.sh
 #description    :Menu
 #author         :Rob Landry
-#date           :20140614
+#date           :20140629
 #version        :0.1    
 #usage          :./menu.sh
 #notes          :       
@@ -11,7 +11,7 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 #rm -r $SCRIPTPATH/*~
 #rm -r $SCRIPTPATH/install/*~
-declare -r thisDay="20140614"
+declare -r thisDay="20140629"
 declare -r BLACK=$(tput setaf 0)	# black
 declare -r RED=$(tput setaf 1)		# red
 declare -r GREEN=$(tput setaf 2)	# green
@@ -53,14 +53,30 @@ firstRun() {
 }
 
 update(){
-	wget -q https://raw.githubusercontent.com/roblandry/install/master/menu -O $SCRIPTPATH/temp
-	oldDate=`sed '5q;d' $SCRIPTPATH/menu`
-	newDate=`sed '5q;d' $SCRIPTPATH/temp`
-	oldDate=${oldDate:17:8}
-	newDate=${newDate:17:8}
-	if [ $newDate > $oldDate ]; then
+	LOCAL=$(git rev-parse @)
+	REMOTE=$(git rev-parse @{u})
+	BASE=$(git merge-base @ @{u})
+
+	if [ $LOCAL = $BASE ]; then
 		git pull origin
 		echo -e $GREEN"Update Complete!"$RS
+	fi
+}
+
+checkVersion(){
+	format=" %-22s %-20s %21s\n"
+	LOCAL=$(git rev-parse @)
+	REMOTE=$(git rev-parse @{u})
+	BASE=$(git merge-base @ @{u})
+
+	if [ $LOCAL = $REMOTE ]; then
+		printf "$format" "#" "${BLUE}No Updates available.${RS}" "#"
+	elif [ $LOCAL = $BASE ]; then
+		printf "$format" "#" "${GREEN} Updates available.${RS}" "#"
+	elif [ $REMOTE = $BASE ]; then
+		printf "$format" "#" "${RED} Installer script has changes!$RS" "#"
+	else
+		printf "$format" "#" "${RED} Please reinstall script$RS" "#"
 	fi
 }
 
@@ -101,6 +117,8 @@ do
 
 	printf "$format" "#" "" "" "#"
 	printf "$format" \# " q) quit" "u) update" \#
+	printf "$border" "#================================================================#"
+	checkVersion
 	printf "$border" "#================================================================#"
 	echo ""
 	echo "Chose your option: "
