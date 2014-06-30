@@ -122,10 +122,9 @@ do
 	read go
 	    case $go in
 		[0-4]) $SCRIPTPATH/install/${filelist[$go]}; continue;;
-		f) clear; firstRun; continue;;
 		q) clear; exit 0;;
 		u) clear; update; continue;;
-		u) clear; forceUpdate; continue;;
+		f) clear; forceUpdate; continue;;
 	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
 	    esac
 
