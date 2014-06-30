@@ -53,31 +53,26 @@ firstRun() {
 }
 
 update(){
-	LOCAL=$(git rev-parse @)
-	REMOTE=$(git rev-parse @{u})
-	BASE=$(git merge-base @ @{u})
-
-	if [ $LOCAL = $BASE ]; then
+	if [ `git log --pretty=%H ...refs/heads/master^` = `git ls-remote origin -h refs/heads/master |cut -f1` ]; then 
+		echo -e $RED"No Updates Available!"$RS
+	else
 		git pull origin
 		echo -e $GREEN"Update Complete!"$RS
 	fi
 }
 
 checkVersion(){
-	format=" %-22s %-20s %21s\n"
-	LOCAL=$(git rev-parse @)
-	REMOTE=$(git rev-parse @{u})
-	BASE=$(git merge-base @ @{u})
-
-	if [ $LOCAL = $REMOTE ]; then
-		printf "$format" "#" "${BLUE}No Updates available.${RS}" "#"
-	elif [ $LOCAL = $BASE ]; then
-		printf "$format" "#" "${GREEN} Updates available.${RS}" "#"
-	elif [ $REMOTE = $BASE ]; then
-		printf "$format" "#" "${RED} Installer script has changes!$RS" "#"
+	if [ `git log --pretty=%H ...refs/heads/master^` = `git ls-remote origin -h refs/heads/master |cut -f1` ]; then 
+		printf " %-20s %-24s %22s\n" \# "${BLUE} No Updates available.${RS}" \#
 	else
-		printf "$format" "#" "${RED} Please reinstall script$RS" "#"
+		printf " %-22s %-24s %23s\n" \# "${GREEN} Updates available.${RS}" \#
 	fi
+}
+
+forceUpdate(){
+	read -p "${RED} Are you sure? CTRL-C to ABORT!${RS}"
+	git fetch --all
+	git reset --hard origin/master
 }
 
 menu() {
@@ -116,7 +111,8 @@ do
 	fi
 
 	printf "$format" "#" "" "" "#"
-	printf "$format" \# " q) quit" "u) update" \#
+	printf "$format" \# " u) update" "f) force update" \#
+	printf "$format" \# " q) quit" "" \#
 	printf "$border" "#================================================================#"
 	checkVersion
 	printf "$border" "#================================================================#"
@@ -129,6 +125,7 @@ do
 		f) clear; firstRun; continue;;
 		q) clear; exit 0;;
 		u) clear; update; continue;;
+		u) clear; forceUpdate; continue;;
 	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
 	    esac
 
