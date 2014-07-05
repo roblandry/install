@@ -20,6 +20,7 @@ declare -r appArr=( [1]="chromium-browser"
 	[19]="smartgit" 
 	[20]="boot-repair"
 	[21]="archey"
+	[22]="caffeine"
 )
 
 declare -r BLACK=$(tput setaf 0)	# black
@@ -32,6 +33,10 @@ declare -r CYAN=$(tput setaf 6) 	# CYAN
 declare -r WHITE=$(tput setaf 7) 	# WHITE
 declare -r RS=$(tput setaf 9)		# reset
 
+caffeine(){
+	sudo add-apt-repository ppa:caffeine-developers/ppa
+	sudo apt-get update
+}
 
 bootrepair(){
 	sudo add-apt-repository ppa:yannubuntu/boot-repair
@@ -137,6 +142,15 @@ apps() {
 			fi
 		elif [ $pkg = "boot-repair" ]; then
 			bootrepair
+			if sudo apt-get -qq install $pkg; then
+				clear
+				echo -e $GREEN"Successfully installed $pkg"$RS
+			else
+				clear
+				echo -e $RED"Error installing $pkg"$RS
+			fi
+		elif [ $pkg = "caffeine" ]; then
+			caffeine
 			if sudo apt-get -qq install $pkg; then
 				clear
 				echo -e $GREEN"Successfully installed $pkg"$RS

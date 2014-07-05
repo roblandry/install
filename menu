@@ -2,7 +2,7 @@
 #title          :menu.sh
 #description    :Menu
 #author         :Rob Landry
-#date           :20140629
+#date           :20140705
 #version        :0.1    
 #usage          :./menu.sh
 #notes          :       
@@ -11,7 +11,7 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 #rm -r $SCRIPTPATH/*~
 #rm -r $SCRIPTPATH/install/*~
-declare -r thisDay="20140629"
+declare -r thisDay="20140705"
 declare -r BLACK=$(tput setaf 0)	# black
 declare -r RED=$(tput setaf 1)		# red
 declare -r GREEN=$(tput setaf 2)	# green
