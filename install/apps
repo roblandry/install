@@ -1,4 +1,5 @@
 #! /bin/bash
+# Define the app array
 declare -r appArr=( [1]="chromium-browser" 
 	[2]="wine" 
 	[3]="winetricks" 
@@ -17,12 +18,13 @@ declare -r appArr=( [1]="chromium-browser"
 	[16]="Evernote" 
 	[17]="google-musicmanager-beta" 
 	[18]="skype" 
-	[19]="smartgit" 
+	[19]="smartgithg" 
 	[20]="boot-repair"
 	[21]="archey"
 	[22]="caffeine"
 )
 
+# Add some custom script colors
 declare -r BLACK=$(tput setaf 0)	# black
 declare -r RED=$(tput setaf 1)		# red
 declare -r GREEN=$(tput setaf 2)	# green
@@ -33,174 +35,375 @@ declare -r CYAN=$(tput setaf 6) 	# CYAN
 declare -r WHITE=$(tput setaf 7) 	# WHITE
 declare -r RS=$(tput setaf 9)		# reset
 
-caffeine(){
-	sudo add-apt-repository ppa:caffeine-developers/ppa
+# Message output function
+#	accepts: 0,1,2
+#	outputs: Installation status message
+#	returns: nothing
+msg(){
+	case $1 in
+		0) echo -e $GREEN"Successfully installed $2"$RS;;
+		1) echo -e $RED"Error installing $2"$RS;;
+		2) echo -e $BLUE"$2 is already installed"$RS;;
+		3) echo -e $RED"Invalid Option!"$RS;;
+	esac
+}
+
+# Add the apt repository function
+#	accepts: repository, special function
+#	outputs: nothing
+#	returns: nothing
+add-apt-repo(){
+	# Add repo
+	sudo add-apt-repository $1
+	# Custom line
+	$2
+	# Get update
 	sudo apt-get update
 }
 
-bootrepair(){
-	sudo add-apt-repository ppa:yannubuntu/boot-repair
-	sudo sed 's/trusty/saucy/g' -i /etc/apt/sources.list.d/yannubuntu-boot-repair-trusty.list
-	sudo apt-get update
+# Deb function
+#	accepts: deb location, file name, pretty program name
+#	outputs: Success message (No Error Handeling)
+#	returns: nothing
+get-deb(){
+	# Get the deb
+	wget $1
+	# Install the deb
+	sudo dpkg -i $2
+	# Clean up
+	rm $2
+	# Clear screen
+	clear
+	# Output success message
+	msg 0 $3
+	if is-installed $3; then
+		msg 0 $3
+	else
+		msg 1 $3
+	fi
 }
 
+# Check if is installed function
+#	accepts: package name
+#	outputs: nothing
+#	returns: true=0|false=1
+is-installed(){
+	# If is installed
+	if dpkg --get-selections | grep -q "^$1[[:space:]]*install$" >/dev/null; then
+		# Return True
+		return 0
+	# Not istalled
+	else
+		# Return False
+		return 1
+	fi
+}
+
+# Install the package
+#	accepts: package
+#	outputs: Success|Failure
+#	returns: nothing
+do-install(){
+	# Install and if success
+	if sudo apt-get -qq install $1; then
+		# Clear screen
+		clear
+		# Output success
+		msg 0 $1
+	# Install failure
+	else
+		# Clear screen
+		clear
+		# Output failure
+		msg 1 $1
+	fi
+}
+
+# Custom Evernote Function
+#	accepts: nothing
+#	outputs: Pause message|Success message (No Error Handeling)
+#	returns: nothing
 evernote(){
+	# Assign the url and get it
 	url="http://evernote.com/download/get.php?file=Win"
 	wget -O "Evernote.exe" $url
+	# Wine install it
 	wine "Evernote.exe"
+	# Pause because it takes a while
 	read -p "Press [Enter] to continue."
+	# Clean up
 	rm "Evernote.exe"
+	# Clear screen
 	clear
-	echo -e $GREEN"Successfully installed Evernote"$RS
+	# Output success
+	msg 0 "Evernote"
 }
 
+# Custom GMusic Function
+#	accepts: nothing
+#	outputs: nothing
+#	returns: nothing
 gmusic(){
+	# Add to custom sources list
 	sudo sh -c 'echo "deb http://dl.google.com/linux/musicmanager/deb/ stable main" >> /etc/apt/sources.list.d/google-musicmanager.list'
+	# Get signing key
 	wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+	# Update sources
 	sudo apt-get update
+	# Clear screen
 	clear
 }
 
-skype(){
-	sudo dpkg --add-architecture i386
-	sudo add-apt-repository "deb http://archive.canonical.com/ $(lsb_release -sc) partner"
-	sudo apt-get update
-	clear
-}
-
+# Custom SmartGit Function
+#	accepts: nothing
+#	outputs: nothing
+#	returns: nothing
 smartgit(){
-
-	if dpkg --get-selections | grep -q "^openjdk-7-jre[[:space:]]*install$" >/dev/null; then
-		echo -e $BLUE"openjdk-7-jre is already installed"$RS
+	# Check if depends installed
+	if is-installed "openjdk-7-jre"; then
+		# Already installed
+		msg 2 "openjdk-7-jre"
+	# Not installed
 	else
+		# Install it
 		sudo apt-get install openjdk-7-jre
 	fi
-	#sudo add-apt-repository ppa:eugenesan/ppa
-	#sudo apt-get update
+	# Assign vars and add the repo (Currently breaks 14.04)
+	theRepo="ppa:eugenesan/ppa"
+	add-apt-repo $theRepo
+	# Clear screen
 	clear
 }
 
-archey(){
-	sudo apt-get install lsb-release scrot
-	wget http://github.com/downloads/djmelik/archey/archey-0.2.8.deb
-	sudo dpkg -i archey-0.2.8.deb 
-	rm archey-0.2.8.deb
-	clear
-	echo -e $GREEN"Successfully installed Archey"$RS
-}
-
+# Main Apps Function
+#	accepts: app selection
+#	outputs: Success|Failure|Message
+#	returns: nothing
 apps() {
-	clear
+
+	# Get selection
 	selection=$@
-	if [ $selection = "all" ]; then
+	# Do we want to install all of the apps?
+	if [ "$selection" = "all" ]; then
+		# Assign all of the apps to the installation array
 		toInstall=${appArr[@]}
+	# Does the selection match an array key?
 	elif [ $selection -eq $selection 2> /dev/null ]; then
+		# Assign the app the the installation array
 		toInstall=${appArr[$selection]}
+	# Otherwise it is a custom package
 	else
-		toInstall=$selection
+		#toInstall=$selection
+		toInstall=""
 	fi
 
+	if [ "$toInstall" = "" ]; then
+		msg 3
+	fi
+
+	# Loop all packages to be installed
 	for pkg in $toInstall ; do
 
-		if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
-			echo -e $BLUE"$pkg is already installed"$RS
-		elif [ $pkg = "archey" ]; then
-			archey
+		# Check if the package is already installed
+		if is-installed $pkg; then
+			# Output already installed msg
+			msg 2 $pkg
+
+		# Not istalled and is...
 		elif [ $pkg = "Evernote" ]; then
+			# Check if wine app installed by checking folder
 			if [[ -d "/home/rob/.wine/drive_c/Program Files (x86)/Evernote" ]]; then
-				clear
-				echo -e $BLUE"$pkg is already installed"$RS
+				# Output already installed msg
+				msg 2 $pkg
+			# Otherwise install it
 			else
+				# Special Function
 				evernote
 			fi
+
+		# Not istalled and is...
 		elif [ $pkg = "google-musicmanager-beta" ]; then
+			# Special Function
 			gmusic
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
-		elif [ $pkg = "skype" ]; then
-			skype
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
 		elif [ $pkg = "smartgit" ]; then
+			# Special Function
 			smartgit
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "archey" ]; then
+			# Assign vars and install Deb
+			theDeb="http://github.com/downloads/djmelik/archey/archey-0.2.8.deb"
+			theFile="archey-0.2.8.deb"
+			get-deb $theDeb $theFile $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "skype" ]; then
+			sudo dpkg --add-architecture i386
+			# Assign vars and add the repo
+			theRepo="deb http://archive.canonical.com/ $(lsb_release -sc) partner"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
 		elif [ $pkg = "boot-repair" ]; then
-			bootrepair
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
+			# Assign vars and add the repo
+			theRepo="ppa:yannubuntu/boot-repair"
+			theExtra="sudo sed 's/trusty/saucy/g' -i /etc/apt/sources.list.d/yannubuntu-boot-repair-trusty.list"
+			add-apt-repo $theRepo $theExtra
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
 		elif [ $pkg = "caffeine" ]; then
-			caffeine
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
+			# Assign vars and add the repo
+			theRepo="ppa:caffeine-developers/ppa"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# else pkg matched no special cases just install it
 		else
-			if sudo apt-get -qq install $pkg; then
-				clear
-				echo -e $GREEN"Successfully installed $pkg"$RS
-			else
-				clear
-				echo -e $RED"Error installing $pkg"$RS
-			fi
+			# Install it and report success/failure
+			do-install $pkg
 		fi
 	done
 
 }
 
-menu(){
+# My install Apps Function
+#	accepts: app 
+#	outputs: Success|Failure|Message
+#	returns: nothing
+myinstall(){
+	echo "Enter a package name to install: "
+
+	# Get the user input
+	read pkg
+	if [ "$pkg" = "" ]; then
+		clear
+		msg 3
+		return 1
+	fi
+
+	echo -e $RED"Are you sure you want to install $pkg? (y|n)"$RS
+
+	# Get the user input
+	read app
+
 	clear
+	case $app in
+		y|Y) 
+
+			# Check if the package is already installed
+			if is-installed $pkg; then
+				# Output already installed msg
+				msg 2 $pkg
+
+			# else pkg matched no special cases just install it
+			else
+				# Install it and report success/failure
+				do-install $pkg
+			fi
+			;;
+
+		*) echo -e $RED"Canceled installation of $pkg"$RS;;
+	esac
+
+}
+
+# Uninstall Apps Function
+#	accepts: app 
+#	outputs: Success|Failure|Message
+#	returns: nothing
+uninstall(){
+	echo "Enter a package name to uninstall: "
+
+	# Get the user input
+	read toUninstall
+	if [ "$toUninstall" = "" ]; then
+		clear
+		msg 3
+		return 1
+	fi
+
+	# Loop all packages to be uninstalled
+	for pkg in "${appArr[@]}" ; do
+		if [ $pkg = $toUninstall ]; then
+
+			echo -e $RED"Are you sure you want to remove $pkg? (y|n)"$RS
+
+			# Get the user input
+			read app
+
+			clear
+			case $app in
+			y|Y) 
+				if sudo apt-get -qq remove $pkg; then
+					echo -e $GREEN"Successfully uninstalled $pkg"$RS;
+				else
+					echo -e $RED"Error uninstalling $pkg"$RS;
+				fi
+			;;
+			*) echo -e $RED"Canceled removal of $pkg"$RS;;
+			esac
+		fi
+	done
+}
+
+
+
+# Main Menu Function
+#	accepts: user input
+#	outputs: the menu
+#	returns: success
+menu(){
+	# Clear screen
+	clear
+	# Blank line later replaced by messages
 	echo ""
+	# The printf formats
 	border=" %-65s\n"
 	format1=" %-2s %-40s"
 	format2="%-40s %2s\n"
 	format=" %-2s %-30s %-29s %2s\n"
+
 while :
 do
 
 
-
+	# The Menu
 	printf "$border" "#========================+++++${GREEN} Apps ${RS}+++++========================#"
 	printf "$format" "#" "" "" "#"
 
+	# Get the app array and assign each to i
 	for i in "${!appArr[@]}"; do
 		pkg=${appArr[$i]}
-		if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
+		# If it is installed output green text
+		if is-installed $pkg; then
+			# Coding for right|left columns
 			if [ $((i%2)) -eq 0 ]; then
 				printf "$format2"  "${GREEN} $i) $pkg${RS}" \#
 			else
 				printf "$format1"  \# "${GREEN} $i) $pkg${RS}"
 			fi
+		# If it is Evernote and installed output green text
 		elif [ $pkg = "Evernote" ] && [[ -d "/home/rob/.wine/drive_c/Program Files (x86)/Evernote" ]]; then
+			# Coding for right|left columns
 			if [ $((i%2)) -eq 0 ]; then
 				printf "$format2"  "${GREEN} $i) $pkg${RS}" \#
 			else
 				printf "$format1"  \# "${GREEN} $i) $pkg${RS}"
 			fi
+		# Its not installed, output red text
 		else
+			# Coding for right|left columns
 			if [ $((i%2)) -eq 0 ]; then
 				printf "$format2"  "${RED} $i) $pkg${RS}" \#
 			else
@@ -209,26 +412,33 @@ do
 		fi
 	done
 
+	# Padding for odd number of apps
 	i=${#appArr[@]}
 	if [ ! $((i%2)) -eq 0 ]; then
 		printf "%-30s %2s\n" "" \#
 	fi
 
+	# Finish the menu
 	printf "$format" \# "" "" \#
+	printf "$format" \# " u) uninstall" "i) install" \#
 	printf "$format" \# " a) all apps" "r) return" \#
 	printf "$border" "#================================================================#"
 	echo ""
 	echo "Chose your option or enter a package name: "
 
+	# Get the user input
 	read app
 	    case $app in
-		[1-21]) apps $app; continue;;
-		a) apps "all"; continue;;
-		r) clear; echo ""; exit 1;;
-	        *) apps $app; continue;;
+		[0-9]*) clear; apps $app; continue;;
+		u) clear; uninstall; continue;;
+		i) clear; myinstall; continue;;
+		a) clear; apps "all"; continue;;
+		r) clear; echo ""; exit 0;;
+	        *) clear; msg 3; continue;;
 	    esac
 
 done
 }
 
+# Run the menu
 menu

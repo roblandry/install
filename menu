@@ -3,7 +3,7 @@
 #description    :Menu
 #author         :Rob Landry
 #date           :20140705
-#version        :0.1    
+#version        :0.2
 #usage          :./menu.sh
 #notes          :       
 #bash_version   :4.3.11(1)-release
