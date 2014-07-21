@@ -3,7 +3,7 @@
 #description    :Menu
 #author         :Rob Landry
 #date           :20140721
-#version        :0.3
+#version        :0.4
 #usage          :./menu
 #notes          :       
 #bash_version   :4.3.11(1)-release
@@ -123,8 +123,8 @@ do
 	    case $go in
 		[0-4]) $SCRIPTPATH/install/${filelist[$go]}; continue;;
 		q) clear; exit 0;;
-		u) clear; update; continue;;
-		f) clear; forceUpdate; continue;;
+		u) clear; update; exec $menu 1;;
+		f) clear; forceUpdate; exec $menu 1;;
 	        *) clear; echo -e $RED"Invalid Option!"$RS; continue;;
 	    esac
 
