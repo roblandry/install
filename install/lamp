@@ -1,75 +1,252 @@
 #! /bin/bash
-FRED="\033[31m" # foreground red
-RS="\033[0m"    # reset
+# Define the app array
+declare -r appArr=( [1]="debconf-utils" 
+	[2]="apache2" 
+	[3]="mysql-server" 
+	[4]="mysql-client" 
+	[5]="php5"
+	[6]="php5-mysql"
+	[7]="libapache2-mod-php5"
+	[8]="phpmyadmin"
 
-echo -e $FRED"Installing: LAMP"$RS
+)
 
-#check if root user
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 1>&2
-   exit 1
-fi
+# Add some custom script colors
+declare -r BLACK=$(tput setaf 0)	# black
+declare -r RED=$(tput setaf 1)		# red
+declare -r GREEN=$(tput setaf 2)	# green
+declare -r YELLOW=$(tput setaf 3) 	# yellow
+declare -r BLUE=$(tput setaf 4) 	# blue
+declare -r MAGENTA=$(tput setaf 5)	# MAGENTA
+declare -r CYAN=$(tput setaf 6) 	# CYAN
+declare -r WHITE=$(tput setaf 7) 	# WHITE
+declare -r RS=$(tput setaf 9)		# reset
+
+# Message output function
+#	accepts: 0,1,2
+#	outputs: Installation status message
+#	returns: nothing
+msg(){
+	case $1 in
+		0) echo -e $GREEN"Successfully installed $2"$RS;;
+		1) echo -e $RED"Error installing $2"$RS;;
+		2) echo -e $BLUE"$2 is already installed"$RS;;
+		3) echo -e $RED"Invalid Option!"$RS;;
+	esac
+}
+
+# Check if is installed function
+#	accepts: package name
+#	outputs: nothing
+#	returns: true=0|false=1
+is-installed(){
+	# If is installed
+	if dpkg --get-selections | grep -q "^$1[[:space:]]*install$" >/dev/null; then
+		# Return True
+		return 0
+	# Not istalled
+	else
+		# Return False
+		return 1
+	fi
+}
+
+# Install the package
+#	accepts: package
+#	outputs: Success|Failure
+#	returns: nothing
+do-install(){
+
+	# Loop all packages to be installed
+	for pkg in $1 ; do
+
+		# Install and if success
+		if sudo apt-get -qq install $1; then
+			# Clear screen
+			clear
+			# Output success
+			msg 0 $1
+		# Install failure
+		else
+			# Clear screen
+			clear
+			# Output failure
+			msg 1 $1
+		fi
+	done
+}
+
+# Main Apps Function
+#	accepts: app selection
+#	outputs: Success|Failure|Message
+#	returns: nothing
+apps() {
+
+	# Get selection
+	selection=$@
+	# Do we want to install all of the apps?
+	if [ "$selection" = "all" ]; then
+		# Assign all of the apps to the installation array
+		toInstall=${appArr[@]}
+	# Does the selection match an array key?
+	elif [ $selection -eq $selection 2> /dev/null ]; then
+		# Assign the app the the installation array
+		toInstall=${appArr[$selection]}
+	# Otherwise it is a custom package
+	else
+		#toInstall=$selection
+		toInstall=""
+	fi
+
+	if [ "$toInstall" = "" ]; then
+		msg 3
+	fi
+
+	# Loop all packages to be installed
+	for pkg in $toInstall ; do
+
+		# Check if the package is already installed
+		if is-installed $pkg; then
+			# Output already installed msg
+			msg 2 $pkg
+
+		# Not istalled and is apache2
+		elif [ $pkg = "apache2" ]; then
+
+			# Install it and report success/failure
+			do-install $pkg
+			echo "ServerName localhost" >> /etc/apache2/apache2.conf
+			xdg-open "http://localhost"
+
+		# Not istalled and is mysql-server
+		elif [ $pkg = "mysql-server" ]; then
+
+			packages=([1]="mysql-server" [2]="mysql-client")
+
+			echo "mysql-server-5.5 mysql-server/root_password_again password $pswd" | debconf-set-selections
+			echo "mysql-server-5.5 mysql-server/root_password password $pswd" | debconf-set-selections
+
+			# Install it and report success/failure
+			do-install $packages
+
+			sudo service mysql status
+
+		# Not istalled and is php5
+		elif [ $pkg = "php5" ]; then
+
+			packages=([1]="php5" [2]="php5-mysql" [3]="libapache2-mod-php5")
+
+			# Install it and report success/failure
+			do-install $packages
+
+			sudo service apache2 restart
+			echo "<?php phpinfo(); ?>" > /var/www/testphp.php
+			xdg-open "http://localhost/testphp.php"
+
+		# Not istalled and is phpmyadmin
+		elif [ $pkg = "phpmyadmin" ]; then
+
+			echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+			echo "phpmyadmin phpmyadmin/app-password-confirm password $pswd" | debconf-set-selections
+			echo "phpmyadmin phpmyadmin/mysql/admin-pass password $pswd" | debconf-set-selections
+			echo "phpmyadmin phpmyadmin/mysql/app-pass password $pswd" | debconf-set-selections
+			echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+
+			# Install it and report success/failure
+			do-install $pkg
+
+		fi
+	done
+
+}
+
+# Main Menu Function
+#	accepts: user input
+#	outputs: the menu
+#	returns: success
+menu(){
+	# Clear screen
+	clear
+
+	echo -e $pswd
+	# The printf formats
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+
+while :
+do
+
+
+	# The Menu
+	printf "$border" "#========================+++++${GREEN} LAMP ${RS}+++++========================#"
+	printf "$format" "#" "" "" "#"
+
+	# Get the app array and assign each to i
+	for i in "${!appArr[@]}"; do
+		pkg=${appArr[$i]}
+		# If it is installed output green text
+		if is-installed $pkg; then
+			# Coding for right|left columns
+			if [ $((i%2)) -eq 0 ]; then
+				printf "$format2"  "${GREEN} $i) $pkg${RS}" \#
+			else
+				printf "$format1"  \# "${GREEN} $i) $pkg${RS}"
+			fi
+
+		# Its not installed, output red text
+		else
+			# Coding for right|left columns
+			if [ $((i%2)) -eq 0 ]; then
+				printf "$format2"  "${RED} $i) $pkg${RS}" \#
+			else
+				printf "$format1"  \# "${RED} $i) $pkg${RS}"
+			fi
+		fi
+	done
+
+	# Padding for odd number of apps
+	i=${#appArr[@]}
+	if [ ! $((i%2)) -eq 0 ]; then
+		printf "%-30s %2s\n" "" \#
+	fi
+
+	# Finish the menu
+	printf "$format" \# "" "" \#
+	printf "$format" \# " u) uninstall" "" \#
+	printf "$format" \# " a) Install LAMP" "r) return" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option or enter a package name: "
+
+	# Get the user input
+	read app
+	    case $app in
+		[0-9]*) clear; apps $app; continue;;
+		u) clear; uninstall; continue;;
+		a) clear; apps "all"; continue;;
+		r) clear; echo ""; exit 0;;
+	        *) clear; msg 3; continue;;
+	    esac
+
+done
+}
+
 
 #check if password entered
 if [[ ! $1 ]]; then
 	echo -e "Please enter a password [enter]"
-	read pswd
+	read psswd
 else
-	pswd=$1
+	psswd=$1
 fi
-
-echo -e $pswd
-
-#install debconf-utils for noninteractive
-pkg="debconf-utils"
-if dpkg --get-selections | grep -q "^$pkg[[:space:]]*install$" >/dev/null; then
-	echo -e "$pkg is already installed"
-else
-	if apt-get -qq install $pkg; then
-	    echo -e "Successfully installed $pkg"
-	else
-	    echo -e "Error installing $pkg"
-	fi
-fi
+declare -r pswd=$psswd
 
 
-#install Apache2
-echo -e "Installing Apache2"
-apt-get -q -y install apache2
-echo "ServerName localhost" >> /etc/apache2/apache2.conf
-#if grep ^sshd: /proc/$PPID/cmdline &> /dev/null; then
-#	echo ""
-#else
-	xdg-open "http://localhost"
-#fi
+# Run the menu
+menu
 
 
-#install MySQL
-echo -e "Installing MySQL"
-echo "mysql-server-5.5 mysql-server/root_password_again password $pswd" | debconf-set-selections
-echo "mysql-server-5.5 mysql-server/root_password password $pswd" | debconf-set-selections
-apt-get -q -y install mysql-server mysql-client
-service mysql status
-
-#install PHP
-echo -e "Installing PHP"
-apt-get install php5 php5-mysql libapache2-mod-php5
-service apache2 restart
-echo "<?php phpinfo(); ?>" > /var/www/testphp.php
-#if grep ^sshd: /proc/$PPID/cmdline &> /dev/null; then
-#        echo ""
-#else
-        xdg-open "http://localhost/testphp.php"
-#fi
 
 
-#install PHPmyadmin
-echo -e "Installing phpmyadmin"
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/app-password-confirm password $pswd" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/admin-pass password $pswd" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/app-pass password $pswd" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-apt-get -q -y install phpmyadmin
-
-echo -e "Congradulations LAMP installed!"

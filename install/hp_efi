@@ -1,0 +1,150 @@
+#!/bin/bash -   
+#title          :hp_efi 
+#description    :Fixes HP EFI
+#author         :Rob Landry
+#date           :20140705
+#version        :0.1    
+#usage          :./hp_efi
+#notes          :       
+#bash_version   :4.3.11(1)-release
+#============================================================================
+declare -r fname=temp_$(date +"%m.%d.%Y_%H.%M.%S").txt
+declare -r umnt="/boot/efi"
+declare -r BLACK=$(tput setaf 0)	# black
+declare -r RED=$(tput setaf 1)		# red
+declare -r GREEN=$(tput setaf 2)	# green
+declare -r YELLOW=$(tput setaf 3) 	# yellow
+declare -r BLUE=$(tput setaf 4) 	# blue
+declare -r MAGENTA=$(tput setaf 5)	# MAGENTA
+declare -r CYAN=$(tput setaf 6) 	# CYAN
+declare -r WHITE=$(tput setaf 7) 	# WHITE
+declare -r RS=$(tput setaf 9)		# reset
+
+# Message output function
+#	accepts: 0,1,2
+#	outputs: Installation status message
+#	returns: nothing
+msg(){
+	case $1 in
+		0) clear; echo -e $GREEN"Successfully $2"$RS;;
+		1) clear; echo -e $RED"Error $2"$RS;;
+		2) clear; echo -e $RED"Operation Canceled!"$RS;;
+	esac
+}
+
+show_efi(){
+	sudo efibootmgr -v > $fname
+	gedit $fname > /dev/null 2>&1 &
+	#echo -e ${CYAN}"Copy the Windows Boot Loader for the next operation."${RS}
+	#read -p "Press [Enter] to continue."
+	#rm $fname
+	echo ""
+	return 0
+}
+
+back_main_efi(){
+	if show_efi ; then
+		#echo -e "Please paste [CTRL]+[SHIFT]+v the ${YELLOW}Windows Bootloader$RS path"
+		#read -r wpath
+
+		content=$(cat $fname)
+		wpath=`echo ${content#*Windows Boot Manager	HD*File(}`
+		wpath=`echo ${wpath%%)*}`
+		wpath=$umnt${wpath//\\//}
+
+		echo -e "\nIs this correct? (y|n)"
+		echo -e "Windows Boot Loader: [${CYAN}$wpath${RS}]"
+		read yn
+		case $yn in
+			y|Y) sudo cp $wpath $wpath.bak; msg 0 "backed up Windows Bootloader"; return 0;;
+			*) clear; msg 2; return 1;;
+		esac
+	fi
+}
+
+repl_main_efi(){
+	if back_main_efi ; then
+
+		#echo -e "\nPlease paste [CTRL]+[SHIFT]+v the ${YELLOW}Ubuntu Bootloader$RS path"
+		#read -r upath
+
+		content=$(cat $fname)
+		wpath=`echo ${content#*Windows Boot Manager	HD*File(}`
+		wpath=`echo ${wpath%%)*}`
+		wpath=$umnt${wpath//\\//}
+		upath=`echo ${content#*ubuntu	HD*File(}`
+		upath=`echo ${upath%%)*}`
+		upath=$umnt${upath//\\//}
+		gpath=$umnt${upath/shim/grub}
+
+		echo -e "\nIs this correct? (y|n)"
+		echo -e "Ubuntu Boot Loader: [${CYAN}${upath}${RS}]"
+		read yn
+		case $yn in
+			y|Y) sudo cp $upath $wpath; msg 0 "replaced Windows Bootloader"; return 0;;
+			*)clear; msg 2; return 1;;
+		esac
+	fi
+}
+
+rest_main_efi(){
+	if show_efi ; then
+
+		#echo -e "\nPlease paste [CTRL]+[SHIFT]+v the ${YELLOW}Ubuntu Bootloader$RS path"
+		#read -r upath
+
+		content=$(cat $fname)
+		wpath=`echo ${content#*Windows Boot Manager	HD*File(}`
+		wpath=`echo ${wpath%%)*}`
+		wpath=$umnt${wpath//\\//}
+
+		echo -e "\nIs this correct? (y|n)"
+		echo -e "Windows Boot Loader: [${CYAN}${wpath}${RS}]"
+		read yn
+		case $yn in
+			y|Y) sudo cp $wpath.bak $wpath; msg 0 "restored Windows Bootloader"; return 0;;
+			*) clear; msg 2; return 1;;
+		esac
+	fi
+}
+
+rm_tmp(){
+	if [ -f temp_* ]; then
+		rm -r temp_*
+	fi
+}
+
+menu() {
+	clear
+	echo ""
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+while :
+do
+	printf "$border" "#========================++++${GREEN} hp_efi ${RS}++++========================#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" "#" " 1) Show EFI" "2) Backup Win8 EFI" "#"
+	printf "$format" "#" " 3) overwrite Win EFI" "4) Restore Win EFI" "#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" \# " r) return" "" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option: "
+
+	read go
+	    case $go in
+		1) clear; show_efi; continue;;
+		2) clear; back_main_efi; continue;;
+		3) clear; repl_main_efi; continue;;
+		4) clear; rest_main_efi; continue;;
+		r) clear; echo ""; rm_tmp; exit 0;;
+	        *) msg 2; continue;;
+	    esac
+
+done
+
+}
+
+menu

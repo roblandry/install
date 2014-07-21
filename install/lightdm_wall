@@ -1,0 +1,55 @@
+#!/bin/bash -   
+#title          :lightdm_wall
+#description    :Enables user backgrounds
+#author         :Rob Landry
+#date           :20140706
+#version        :0.1    
+#usage          :./lightdm_wall
+#notes          :       
+#bash_version   :4.3.11(1)-release
+#============================================================================
+
+enbkg(){
+	gsettings set com.canonical.unity-greeter draw-user-backgrounds true
+	gsettings set com.canonical.unity-greeter draw-grid false
+	gsettings set org.gnome.settings-daemon.plugins.background active true
+}
+
+restdef(){
+	gsettings set com.canonical.unity-greeter draw-user-backgrounds false
+	gsettings set com.canonical.unity-greeter draw-grid true
+	gsettings set org.gnome.settings-daemon.plugins.background active false
+}
+
+
+menu() {
+	clear
+	echo ""
+	border=" %-65s\n"
+	format1=" %-2s %-40s"
+	format2="%-40s %2s\n"
+	format=" %-2s %-30s %-29s %2s\n"
+while :
+do
+	printf "$border" "#========================+${GREEN} lightdm_wall ${RS}+========================#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" "#" " 1) Enable Background" "2) Restore Default" "#"
+	printf "$format" "#" "" "" "#"
+	printf "$format" \# " r) return" "" \#
+	printf "$border" "#================================================================#"
+	echo ""
+	echo "Chose your option: "
+
+	read go
+	    case $go in
+		1) clear; enbkg; continue;;
+		2) clear; restdef; continue;;
+		r) clear; echo ""; exit 0;;
+	        *) msg 2; continue;;
+	    esac
+
+done
+
+}
+
+menu

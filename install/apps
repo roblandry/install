@@ -22,6 +22,13 @@ declare -r appArr=( [1]="chromium-browser"
 	[20]="boot-repair"
 	[21]="archey"
 	[22]="caffeine"
+	[23]="unity-tweak-tool"
+	[24]="ubuntu-tweak-tool"
+	[25]="my-weather-indicator"
+	[26]="picard"
+	[27]="vlc"
+	[28]="curl"
+	[29]="php5-curl"
 )
 
 # Add some custom script colors
@@ -264,6 +271,22 @@ apps() {
 		elif [ $pkg = "caffeine" ]; then
 			# Assign vars and add the repo
 			theRepo="ppa:caffeine-developers/ppa"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "ubuntu-tweak-tool" ]; then
+			# Assign vars and add the repo
+			theRepo="ppa:tualatrix/ppa"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "my-weather-indicator" ]; then
+			# Assign vars and add the repo
+			theRepo="ppa:atareao/atareao"
 			add-apt-repo $theRepo
 			# Install it and report success/failure
 			do-install $pkg
