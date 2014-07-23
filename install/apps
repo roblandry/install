@@ -29,6 +29,7 @@ declare -r appArr=( [1]="chromium-browser"
 	[27]="vlc"
 	[28]="curl"
 	[29]="php5-curl"
+	[30]="numix-gtk-theme"
 )
 
 # Add some custom script colors
@@ -287,6 +288,14 @@ apps() {
 		elif [ $pkg = "my-weather-indicator" ]; then
 			# Assign vars and add the repo
 			theRepo="ppa:atareao/atareao"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "numix-gtk-theme" ]; then
+			# Assign vars and add the repo
+			theRepo="ppa:numix/ppa"
 			add-apt-repo $theRepo
 			# Install it and report success/failure
 			do-install $pkg
