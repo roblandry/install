@@ -30,6 +30,7 @@ declare -r appArr=( [1]="chromium-browser"
 	[28]="curl"
 	[29]="php5-curl"
 	[30]="numix-gtk-theme"
+	[30]="zoneminder"
 )
 
 # Add some custom script colors
@@ -296,6 +297,14 @@ apps() {
 		elif [ $pkg = "numix-gtk-theme" ]; then
 			# Assign vars and add the repo
 			theRepo="ppa:numix/ppa"
+			add-apt-repo $theRepo
+			# Install it and report success/failure
+			do-install $pkg
+
+		# Not istalled and is...
+		elif [ $pkg = "zoneminder" ]; then
+			# Assign vars and add the repo
+			theRepo="ppa:iconnor/zoneminder"
 			add-apt-repo $theRepo
 			# Install it and report success/failure
 			do-install $pkg

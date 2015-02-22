@@ -72,7 +72,7 @@ repl_main_efi(){
 		wpath=`echo ${content#*Windows Boot Manager	HD*File(}`
 		wpath=`echo ${wpath%%)*}`
 		wpath=$umnt${wpath//\\//}
-		upath=`echo ${content#*ubuntu	HD*File(}`
+		upath=`echo ${content#*Ubuntu	HD*File(}`
 		upath=`echo ${upath%%)*}`
 		upath=$umnt${upath//\\//}
 		gpath=$umnt${upath/shim/grub}
