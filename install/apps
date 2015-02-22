@@ -30,7 +30,7 @@ declare -r appArr=( [1]="chromium-browser"
 	[28]="curl"
 	[29]="php5-curl"
 	[30]="numix-gtk-theme"
-	[30]="zoneminder"
+	[31]="zoneminder"
 )
 
 # Add some custom script colors
